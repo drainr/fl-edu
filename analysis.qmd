@@ -1,6 +1,8 @@
 ---
 title: "analysis"
 format: html
+execute: 
+  echo: false
 ---
 
 ```{r}
@@ -8,6 +10,7 @@ format: html
 
 library(tidyverse)
 library(tidycensus)
+library(sf)
 ```
 
 ```{r}
@@ -27,6 +30,7 @@ county_summary <- fl_education_data |>
 mutate(county = str_extract(NAME, ".* County")) |>
 summarize(total_bachelors = sum(estimate,
                                 na.rm = TRUE),
+          geometry = st_union(geometry),
           .by = county) |> 
 arrange(desc(total_bachelors))
 ```
@@ -51,7 +55,7 @@ fl_top_counties |>
           color = "white",
           size = 0.1) +
   scale_fill_viridis_c(option = "plasma", name = "Estimate") +  
-  facet_wrap(~county, scales = "free") +
+  facet_wrap(~county, scales = "fixed") +
   labs(title = "Top 5 Florida Counties by Bachelor's Degree Attainment (2021)",
        subtitle = "Census Tract-Level Data",
        caption = "Source: US Census Bureau ACS 5-Year Estimates") +
