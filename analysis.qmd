@@ -1,0 +1,62 @@
+---
+title: "analysis"
+format: html
+---
+
+```{r}
+#| label: setup
+
+library(tidyverse)
+library(tidycensus)
+```
+
+```{r}
+# get the acs data for people in florida per tract by bachelor's degree or higher (5 year acs, 2017-2021)
+fl_education_data <- get_acs(geography = "tract",
+                             variables = "B15003_022",
+                             state = "FL",
+                             year = 2021,
+                             survey = "acs5",
+                             geometry = TRUE
+)
+```
+
+```{r}
+# create a "county summary" which gets all county names, then adds amt. of bachelor's degrees per county and arranges them in descending order (greatest first)
+county_summary <- fl_education_data |> 
+mutate(county = str_extract(NAME, ".* County")) |>
+summarize(total_bachelors = sum(estimate,
+                                na.rm = TRUE),
+          .by = county) |> 
+arrange(desc(total_bachelors))
+```
+
+```{r}
+# retrieve top 5 counties from county_summary
+top_counties <- county_summary |> 
+slice_head(n = 5) |> 
+pull(county)
+```
+
+```{r}
+fl_top_counties <- fl_education_data |> 
+mutate(county = str_extract(NAME, ".* County")) |> 
+filter(county %in% top_counties)
+```
+
+```{r}
+fl_top_counties |>
+  ggplot() + 
+  geom_sf(aes(fill = estimate),
+          color = "white",
+          size = 0.1) +
+  scale_fill_viridis_c(option = "plasma", name = "Estimate") +  
+  facet_wrap(~county, scales = "free") +
+  labs(title = "Top 5 Florida Counties by Bachelor's Degree Attainment (2021)",
+       subtitle = "Census Tract-Level Data",
+       caption = "Source: US Census Bureau ACS 5-Year Estimates") +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+```
+
+
